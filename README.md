@@ -40,7 +40,7 @@ En las funciones `displayCharPositionWrite` y `displayStringWrite` se agrega la 
 # Árbol de funciones
 
 <picture>
-    <img src="img/dependency-tree.png">
+    <img src=img/dependecy-tree.png>
 </picture>
 
 # Captura de mensaje
