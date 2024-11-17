@@ -54,11 +54,14 @@
 #define DISPLAY_PIN_D6 13 
 #define DISPLAY_PIN_D7 14 
 
-//=====[Declaration of private data types]=====================================
+#define DISPLAY_WIDTH  20
+#define DISPLAY_HEIGHT 4 
 
+//=====[Declaration of private data types]=====================================
 //=====[Declaration and initialization of public global objects]===============
 
-DigitalOut displayD0( D0 );
+// Pines de las interfaces paralelo de 4 y 8 bits.
+DigitalOut displayD0( D0 );  
 DigitalOut displayD1( D1 );
 DigitalOut displayD2( D2 );
 DigitalOut displayD3( D3 );
@@ -70,19 +73,22 @@ DigitalOut displayRs( D8 );
 DigitalOut displayEn( D9 );
 
 //=====[Declaration of external public global variables]=======================
-
 //=====[Declaration and initialization of public global variables]=============
-
 //=====[Declaration and initialization of private global variables]============
-
 static display_t display;
 static bool initial8BitCommunicationIsCompleted;
 
-//=====[Declarations (prototypes) of private functions]========================
+static char virtualDisplay[DISPLAY_HEIGHT][DISPLAY_WIDTH];
+static uint8_t virtualCursorX = 0;
+static uint8_t virtualCursorY = 0;
 
+//=====[Declarations (prototypes) of private functions]========================
 static void displayPinWrite( uint8_t pinName, int value );
 static void displayDataBusWrite( uint8_t dataByte );
 static void displayCodeWrite( bool type, uint8_t dataBus );
+
+static void clearVirtualDisplay();
+static void printVirtualDisplay();
 
 //=====[Implementations of public functions]===================================
 
@@ -158,11 +164,22 @@ void displayInit( displayConnection_t connection )
                       DISPLAY_IR_DISPLAY_CONTROL_DISPLAY_ON |      
                       DISPLAY_IR_DISPLAY_CONTROL_CURSOR_OFF |    
                       DISPLAY_IR_DISPLAY_CONTROL_BLINK_OFF );    
-    delay( 1 );  
+    delay( 1 );
+
+    clearVirtualDisplay();
+
 }
 
 void displayCharPositionWrite( uint8_t charPositionX, uint8_t charPositionY )
-{    
+{
+
+    if (charPositionX < DISPLAY_WIDTH and charPositionY < DISPLAY_HEIGHT) {
+        virtualCursorX = charPositionX;
+        virtualCursorY = charPositionY;
+
+        printf("Setting cursor position to X: %d, Y: %d\n", virtualCursorX, virtualCursorY);
+    }
+
     switch( charPositionY ) {
         case 0:
             displayCodeWrite( DISPLAY_RS_INSTRUCTION, 
@@ -201,9 +218,26 @@ void displayCharPositionWrite( uint8_t charPositionX, uint8_t charPositionY )
 
 void displayStringWrite( const char * str )
 {
+    
     while (*str) {
-        displayCodeWrite(DISPLAY_RS_DATA, *str++);
+        displayCodeWrite(DISPLAY_RS_DATA, *str);
+
+        if (virtualCursorX < DISPLAY_WIDTH and virtualCursorY < DISPLAY_HEIGHT) {
+            virtualDisplay[virtualCursorY][virtualCursorX] = *str;  
+            virtualCursorX++;
+
+            if (virtualCursorX >= DISPLAY_WIDTH) {
+                virtualCursorX = 0;
+                virtualCursorY = (virtualCursorY + 1) % DISPLAY_HEIGHT;
+            }
+
+        }
+
+        str++;
     }
+
+    printVirtualDisplay();
+
 }
 
 //=====[Implementations of private functions]==================================
@@ -212,8 +246,9 @@ static void displayCodeWrite( bool type, uint8_t dataBus )
 {
     if ( type == DISPLAY_RS_INSTRUCTION )
         displayPinWrite( DISPLAY_PIN_RS, DISPLAY_RS_INSTRUCTION);
-        else
+    else {
         displayPinWrite( DISPLAY_PIN_RS, DISPLAY_RS_DATA);
+    }
     displayPinWrite( DISPLAY_PIN_RW, DISPLAY_RW_WRITE );
     displayDataBusWrite( dataBus );
 }
@@ -259,6 +294,7 @@ static void displayDataBusWrite( uint8_t dataBus )
     displayPinWrite( DISPLAY_PIN_D6, dataBus & 0b01000000 );
     displayPinWrite( DISPLAY_PIN_D5, dataBus & 0b00100000 );
     displayPinWrite( DISPLAY_PIN_D4, dataBus & 0b00010000 );
+    
     switch( display.connection ) {
         case DISPLAY_CONNECTION_GPIO_8BITS:
             displayPinWrite( DISPLAY_PIN_D3, dataBus & 0b00001000 );
@@ -285,4 +321,34 @@ static void displayDataBusWrite( uint8_t dataBus )
     delay( 1 );
     displayPinWrite( DISPLAY_PIN_EN, OFF );  
     delay( 1 );                   
+}
+
+static void clearVirtualDisplay() 
+{
+
+    for (int y = 0; y < DISPLAY_HEIGHT; y++) {
+
+        for (int x = 0; x < DISPLAY_WIDTH; x++) {
+            virtualDisplay[y][x] = ' ';
+        }
+
+    }
+}
+
+static void printVirtualDisplay()
+{
+
+    printf("\n---------- Virtual Display ----------\n\n");
+
+    for (int y = 0; y < DISPLAY_HEIGHT; ++y) {
+
+        for (int x = 0; x < DISPLAY_WIDTH; ++x) {
+            printf("%c", virtualDisplay[y][x]);
+        }
+
+        printf("\n") ;
+    }
+
+    printf("-------------------------------------\n");    
+
 }
