@@ -65,10 +65,14 @@ A continuación se muestra la captura de la trama utilizando el software saleae.
 
 Los bytes se envían por nibbles:
 
-    D7 D6 D5 D5
+    D7 D6 D5 D4
+
 #1:  0  0  1  0
+
 #2:  0  1  1  1
+
 #3:  0  1  0  0
+
 #4:  0  0  1  1
 
 Los nibbles #1 y #2 forman el valor decimal 39 (correspondiente al ', ver tabla).
