@@ -65,7 +65,7 @@ A continuación se muestra la captura de la trama utilizando el software saleae.
 
 Los bytes se envían por nibbles:
 
-    D7 D6 D5 D4
+#N: D7 D6 D5 D4
 
 #1:  0  0  1  0
 
